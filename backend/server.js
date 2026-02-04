@@ -48,8 +48,11 @@ app.get('/', (req, res) => {
   });
 });
 
-// API Routes (to be added in Day 2-4)
-// app.use('/api/auth', require('./routes/auth'));
+// API Routes
+// Day 2: Authentication routes
+app.use('/api/auth', require('./routes/auth'));
+
+// Day 4: Data routes (to be added)
 // app.use('/api/transactions', require('./routes/transactions'));
 // app.use('/api/budgets', require('./routes/budgets'));
 // app.use('/api/emergency-fund', require('./routes/emergencyFund'));
