@@ -1,6 +1,9 @@
 # Project planning files (private)
 proposal
 15_DAY_COMPLETION_PLAN.md
+SECURITY_BEST_PRACTICES.md
+CODE_REVIEW_DAYS_1-2.md
+CODE_REVIEW*.md
 
 # Dependencies
 node_modules/
