@@ -55,7 +55,7 @@ app.use('/api/auth', require('./routes/auth'));
 // Day 4: Data routes
 app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/budgets', require('./routes/budgets'));
-// app.use('/api/emergency-fund', require('./routes/emergencyFund'));
+app.use('/api/emergency-fund', require('./routes/emergencyFund'));
 // app.use('/api/credit-cards', require('./routes/creditCards'));
 // app.use('/api/user', require('./routes/user'));
 
