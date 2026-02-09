@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+/* Base styles */
+@layer base {
+  /* Focus states for keyboard navigation */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-blue-500;
+  }
+
+  body {
+    @apply bg-white text-gray-900 antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1 {
+    @apply text-3xl font-bold tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl font-bold tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl font-bold;
+  }
+
+  h4 {
+    @apply text-lg font-semibold;
+  }
+
+  a {
+    @apply text-blue-600 hover:text-blue-700 transition-colors;
+  }
+
+  a:focus-visible {
+    @apply outline-2 outline-offset-2 outline-blue-500 rounded;
+  }
+
+  button {
+    @apply transition-all duration-200;
+  }
+
+  input,
+  textarea,
+  select {
+    @apply rounded-md border border-gray-300 shadow-sm;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply border-blue-500 ring-1 ring-blue-500;
+  }
+
+  .sr-skip-link {
+    @apply absolute left-0 top-0 z-50 px-6 py-2 bg-gray-900 text-white rounded-b-md transform -translate-y-full focus:translate-y-0 transition-transform;
+  }
+
+  .sr-only {
+    @apply absolute w-1 h-1 p-0 -m-1 overflow-hidden;
+    white-space: nowrap;
+    border-width: 0;
+    clip-path: inset(50%);
+  }
+}
+
+@layer utilities {
+  .container-responsive {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .card {
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .card-hover {
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg hover:cursor-pointer transition-shadow duration-200;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-blue-500;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-gray-200 text-gray-900 hover:bg-gray-300 active:bg-gray-400 focus-visible:outline-gray-500;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus-visible:outline-red-500;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-lg;
+  }
+
+  .input-group {
+    @apply flex flex-col gap-2;
+  }
+
+  .input-group label {
+    @apply font-medium text-sm text-gray-700;
+  }
+
+  .input-group input,
+  .input-group textarea,
+  .input-group select {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm;
+  }
+
+  .input-group input:focus,
+  .input-group textarea:focus,
+  .input-group select:focus {
+    @apply border-blue-500 ring-1 ring-blue-500 outline-none;
+  }
+
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800;
+  }
+
+  .badge-success {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800;
+  }
+
+  .badge-danger {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800;
+  }
+
+  .stat-card {
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-6;
+  }
+
+  .stat-label {
+    @apply text-sm font-medium text-gray-600 mb-2;
+  }
+
+  .stat-value {
+    @apply text-2xl sm:text-3xl font-bold text-gray-900;
+  }
+
+  .stat-change {
+    @apply text-sm font-medium mt-2;
+  }
+
+  .stat-change.positive {
+    @apply text-green-600;
+  }
+
+  .stat-change.negative {
+    @apply text-red-600;
+  }
+
+  .hidden-mobile {
+    @apply hidden sm:block;
+  }
+
+  .mobile-only {
+    @apply sm:hidden;
+  }
+
+  .smooth-scroll {
+    @apply scroll-smooth;
+  }
+
+  .truncate-1 {
+    @apply overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  .gradient-primary {
+    @apply bg-gradient-to-r from-blue-600 to-blue-400;
+  }
+
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+}
+
+/* Print styles for accessibility */
+@media print {
+  .no-print {
+    @apply hidden;
+  }
+
+  a {
+    @apply text-gray-900 underline;
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
