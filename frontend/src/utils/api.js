@@ -44,10 +44,10 @@ apiClient.interceptors.response.use(
 // ============= Auth Endpoints =============
 
 export const authAPI = {
-  register: (userData) => apiClient.post('/users/register', userData),
-  login: (credentials) => apiClient.post('/users/login', credentials),
-  getProfile: () => apiClient.get('/users/profile'),
-  updateProfile: (userData) => apiClient.put('/users/profile', userData),
+  register: (userData) => apiClient.post('/auth/register', userData),
+  login: (credentials) => apiClient.post('/auth/login', credentials),
+  getProfile: () => apiClient.get('/user/profile'),
+  updateProfile: (userData) => apiClient.put('/user/profile', userData),
 };
 
 // ============= Transaction Endpoints =============
