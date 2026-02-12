@@ -262,160 +262,30 @@ router.post('/', async (req, res) => {
 
 /**
  * @route   PUT /api/budgets/:id
- * @desc    Update existing budget
+ * @desc    Update existing budget - NOT IMPLEMENTED (Phase 2)
  * @access  Private
- * @body    category, limit, month, year (all optional)
  */
-router.put('/:id', async (req, res) => {
-  try {
-    // Find budget
-    let budget = await Budget.findById(req.params.id);
-
-    // Check if budget exists
-    if (!budget) {
-      return res.status(404).json({
-        success: false,
-        message: 'Budget not found'
-      });
-    }
-
-    // Verify ownership
-    if (budget.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this budget'
-      });
-    }
-
-    // Validate limit if provided
-    if (req.body.limit !== undefined && req.body.limit < 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Budget limit cannot be negative'
-      });
-    }
-
-    // Validate month if provided
-    if (req.body.month && (req.body.month < 1 || req.body.month > 12)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Month must be between 1 and 12'
-      });
-    }
-
-    // Validate year if provided
-    if (req.body.year && (req.body.year < 2020 || req.body.year > 2100)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Year must be between 2020 and 2100'
-      });
-    }
-
-    // Update budget
-    budget = await Budget.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { 
-        new: true, 
-        runValidators: true 
-      }
-    );
-
-    logger.log(`Updated budget ${req.params.id} for user ${req.user.email}`);
-
-    res.json({
-      success: true,
-      message: 'Budget updated successfully',
-      data: budget
-    });
-
-  } catch (error) {
-    logger.error('Error updating budget:', error.message);
-
-    // Handle invalid ObjectId format
-    if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid budget ID format'
-      });
-    }
-
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', ')
-      });
-    }
-
-    // Handle duplicate key errors
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Budget already exists for this category, month, and year'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update budget'
-    });
-  }
+router.put('/:id', (req, res) => {
+  res.status(501).json({
+    success: false,
+    message: 'Budget edit functionality coming in Phase 2 (post-capstone)',
+    feature: 'Budget updates',
+    status: 'planned'
+  });
 });
 
 /**
  * @route   DELETE /api/budgets/:id
- * @desc    Delete budget
+ * @desc    Delete budget - NOT IMPLEMENTED (Phase 2)
  * @access  Private
  */
-router.delete('/:id', async (req, res) => {
-  try {
-    // Find budget
-    const budget = await Budget.findById(req.params.id);
-
-    // Check if budget exists
-    if (!budget) {
-      return res.status(404).json({
-        success: false,
-        message: 'Budget not found'
-      });
-    }
-
-    // Verify ownership
-    if (budget.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to delete this budget'
-      });
-    }
-
-    // Delete budget
-    await Budget.findByIdAndDelete(req.params.id);
-
-    logger.log(`Deleted budget ${req.params.id} for user ${req.user.email}`);
-
-    res.json({
-      success: true,
-      message: 'Budget deleted successfully'
-    });
-
-  } catch (error) {
-    logger.error('Error deleting budget:', error.message);
-
-    // Handle invalid ObjectId format
-    if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid budget ID format'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete budget'
-    });
-  }
+router.delete('/:id', (req, res) => {
+  res.status(501).json({
+    success: false,
+    message: 'Budget deletion functionality coming in Phase 2 (post-capstone)',
+    feature: 'Budget deletions',
+    status: 'planned'
+  });
 });
 
 module.exports = router;
