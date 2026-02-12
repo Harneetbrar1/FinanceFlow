@@ -102,7 +102,9 @@ export function Register() {
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
-      console.error("Registration error:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Registration error:", err);
+      }
     } finally {
       setLoading(false);
     }

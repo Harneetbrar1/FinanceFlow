@@ -38,7 +38,7 @@ export function Dashboard() {
           budgetUtilization: 65,
         });
       } catch (error) {
-        // Using logger instead of console.log in production
+        // Development environment logging only
         if (process.env.NODE_ENV !== "production") {
           console.error("Error loading dashboard stats:", error);
         }

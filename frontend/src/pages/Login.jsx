@@ -43,7 +43,9 @@ export function Login() {
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
-      console.error("Login error:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Login error:", err);
+      }
     } finally {
       setLoading(false);
     }
