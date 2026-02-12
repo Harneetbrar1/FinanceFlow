@@ -31,8 +31,7 @@ import { useTransactions } from "../hooks/useTransactions";
  */
 export function Transactions() {
   // Hooks
-  const { transactions, loading, error, stats, fetchByMonth } =
-    useTransactions();
+  const { loading, error, stats, fetchByMonth } = useTransactions();
 
   // Filter state
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth());
@@ -155,7 +154,7 @@ export function Transactions() {
             <section className="mb-8">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle
-                  className="text-red-600 flex-shrink-0 mt-0.5"
+                  className="text-red-600 shrink-0 mt-0.5"
                   size={20}
                 />
                 <div>

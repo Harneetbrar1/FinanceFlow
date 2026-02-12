@@ -31,9 +31,8 @@ export function Card({
   className = "",
   children,
 }) {
-  // Generate random trend value if not provided
-  const displayTrendValue =
-    trendValue || Math.abs(Math.floor(Math.random() * 15 + 5));
+  // Display trend value (use provided value or default to 0)
+  const displayTrendValue = trendValue || 0;
 
   // CSS classes for the card container
   const cardClasses = `
@@ -59,7 +58,7 @@ export function Card({
         </div>
 
         {/* Icon on the right */}
-        {icon && <div className="flex-shrink-0 ml-4">{icon}</div>}
+        {icon && <div className="shrink-0 ml-4">{icon}</div>}
       </div>
 
       {/* Trend Indicator */}
