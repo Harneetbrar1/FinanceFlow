@@ -59,7 +59,7 @@ export const authAPI = {
 
 export const transactionAPI = {
   getAll: (params) => apiClient.get('/transactions', { params }),
-  getByMonth: (month, year) => apiClient.get(`/transactions/month/${year}/${month}`),
+  getByMonth: (month, year) => apiClient.get('/transactions/month', { params: { month, year } }),
   create: (data) => apiClient.post('/transactions', data),
   update: (id, data) => apiClient.put(`/transactions/${id}`, data),
   delete: (id) => apiClient.delete(`/transactions/${id}`),
