@@ -1,29 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Sidebar } from "../components/Sidebar";
-import { Card } from "../components/Card";
-import { DollarSign, Plus, Filter } from "lucide-react";
+import { TransactionStats } from "../components/TransactionStats";
+import { TransactionFilter } from "../components/TransactionFilter";
+import { TransactionList } from "../components/TransactionList";
+import { Plus, AlertCircle } from "lucide-react";
+import { useTransactions } from "../hooks/useTransactions";
 
 /**
  * Transactions Page
  *
- * Features:
- * - Complete transaction list view
- * - Filter by month and category
- * - Income vs expense summary
- * - Add transaction button
- * - Responsive design
- * - Placeholder state for upcoming features
+ * Fully functional transaction management interface.
  *
- * TODO: Hook up to backend API for real transaction data
- * TODO: Add Edit/Delete transaction functionality
- * TODO: Add export transactions feature
+ * Features:
+ * ✅ Real transaction list from API
+ * ✅ Filter by month, year, category, and type
+ * ✅ Income vs expense summary with calculations
+ * ✅ Loading and error states
+ * ✅ Responsive design (table on desktop, cards on mobile)
+ * ✅ Edit/Delete placeholder callbacks
+ * ✅ Add transaction button
+ *
+ * Day 8 Implementation Status:
+ * ✅ GET all transactions
+ * ✅ Fetch by month with filters
+ * ✅ Calculate and display totals
+ * ✅ Handle loading states
+ * ✅ Handle error states
+ * 🔄 TODO (Day 9): Add/Edit transaction forms
+ * 🔄 TODO (Day 10): Delete with confirmation
  */
 export function Transactions() {
+  // Hooks
+  const { transactions, loading, error, stats, fetchByMonth } =
+    useTransactions();
+
+  // Filter state
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth());
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterCategory, setFilterCategory] = useState("all");
+  const [filterType, setFilterType] = useState("all");
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
 
   const categories = [
-    "All",
     "Groceries",
     "Entertainment",
     "Utilities",
@@ -31,6 +49,80 @@ export function Transactions() {
     "Salary",
     "Other",
   ];
+
+  /**
+   * Fetch transactions when component mounts or filters change
+   */
+  useEffect(() => {
+    const loadTransactions = async () => {
+      // Fetch transactions for selected month
+      const data = await fetchByMonth(filterMonth + 1, filterYear);
+
+      // Apply client-side filtering
+      let filtered = data || [];
+
+      // Filter by category
+      if (filterCategory !== "all") {
+        filtered = filtered.filter(
+          (t) => t.category.toLowerCase() === filterCategory.toLowerCase(),
+        );
+      }
+
+      // Filter by type
+      if (filterType !== "all") {
+        filtered = filtered.filter((t) => t.type === filterType);
+      }
+
+      setFilteredTransactions(filtered);
+    };
+
+    loadTransactions();
+  }, [filterMonth, filterYear, filterCategory, filterType, fetchByMonth]);
+
+  /**
+   * Handle filter changes
+   */
+  const handleFilterChange = (filters) => {
+    setFilterMonth(filters.month);
+    setFilterYear(filters.year);
+    setFilterCategory(filters.category);
+    setFilterType(filters.type);
+  };
+
+  /**
+   * Handle filter clear
+   */
+  const handleClearFilters = () => {
+    const now = new Date();
+    setFilterMonth(now.getMonth());
+    setFilterYear(now.getFullYear());
+    setFilterCategory("all");
+    setFilterType("all");
+  };
+
+  /**
+   * Handle edit transaction (placeholder)
+   */
+  const handleEditTransaction = (transaction) => {
+    console.log("Edit transaction:", transaction);
+    // TODO: Day 9 - Open edit modal/form
+  };
+
+  /**
+   * Handle delete transaction (placeholder)
+   */
+  const handleDeleteTransaction = (transactionId) => {
+    console.log("Delete transaction:", transactionId);
+    // TODO: Day 10 - Show confirmation and delete
+  };
+
+  /**
+   * Handle add transaction (placeholder)
+   */
+  const handleAddTransaction = () => {
+    console.log("Add new transaction");
+    // TODO: Day 9 - Open add modal/form
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -48,122 +140,62 @@ export function Transactions() {
                   Track and manage your income and expenses
                 </p>
               </div>
-              <button className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={handleAddTransaction}
+                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+              >
                 <Plus size={20} />
                 Add Transaction
               </button>
             </div>
           </section>
 
+          {/* Error Alert */}
+          {error && (
+            <section className="mb-8">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle
+                  className="text-red-600 flex-shrink-0 mt-0.5"
+                  size={20}
+                />
+                <div>
+                  <p className="font-semibold text-red-900">
+                    Error loading transactions
+                  </p>
+                  <p className="text-red-700 text-sm">{error}</p>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Summary Stats */}
           <section className="mb-8 md:mb-12">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              <Card
-                label="Total Income"
-                value="$4,500.00"
-                icon={<DollarSign className="w-5 h-5 text-success-600" />}
-                trend="up"
-                trendValue={12}
-              />
-              <Card
-                label="Total Expenses"
-                value="$2,800.00"
-                icon={<DollarSign className="w-5 h-5 text-danger-600" />}
-                trend="down"
-                trendValue={8}
-              />
-              <Card
-                label="Net Income"
-                value="$1,700.00"
-                icon={<DollarSign className="w-5 h-5 text-primary-600" />}
-              />
-            </div>
+            <TransactionStats stats={stats} loading={loading} />
           </section>
 
           {/* Filters Section */}
           <section className="mb-8">
-            <div className="card p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Filter size={20} className="text-gray-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Month Filter */}
-                <div>
-                  <label
-                    htmlFor="month-filter"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Month
-                  </label>
-                  <select
-                    id="month-filter"
-                    value={filterMonth}
-                    onChange={(e) => setFilterMonth(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value={0}>January</option>
-                    <option value={1}>February</option>
-                    <option value={2}>March</option>
-                    <option value={3}>April</option>
-                    <option value={4}>May</option>
-                    <option value={5}>June</option>
-                    <option value={6}>July</option>
-                    <option value={7}>August</option>
-                    <option value={8}>September</option>
-                    <option value={9}>October</option>
-                    <option value={10}>November</option>
-                    <option value={11}>December</option>
-                  </select>
-                </div>
-
-                {/* Category Filter */}
-                <div>
-                  <label
-                    htmlFor="category-filter"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Category
-                  </label>
-                  <select
-                    id="category-filter"
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat.toLowerCase()}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
+            <TransactionFilter
+              onFilterChange={handleFilterChange}
+              onClear={handleClearFilters}
+              currentFilters={{
+                month: filterMonth,
+                year: filterYear,
+                category: filterCategory,
+                type: filterType,
+              }}
+              categories={categories}
+            />
           </section>
 
           {/* Transactions List */}
           <section>
-            <div className="card p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">
-                Transaction History
-              </h2>
-              <div className="overflow-x-auto">
-                <div className="h-64 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
-                  <div className="text-center">
-                    <DollarSign
-                      size={48}
-                      className="mx-auto mb-4 text-gray-400"
-                    />
-                    <p className="text-lg font-medium">No transactions yet</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Start by adding your first transaction
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TransactionList
+              transactions={filteredTransactions}
+              loading={loading}
+              onEdit={handleEditTransaction}
+              onDelete={handleDeleteTransaction}
+            />
           </section>
         </div>
       </main>
