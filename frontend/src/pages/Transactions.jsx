@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { TransactionStats } from "../components/TransactionStats";
 import { TransactionFilter } from "../components/TransactionFilter";
 import { TransactionList } from "../components/TransactionList";
+import { TransactionForm } from "../components/TransactionForm";
+import { Toast } from "../components/Toast";
 import { Plus, AlertCircle } from "lucide-react";
 import { useTransactions } from "../hooks/useTransactions";
 
@@ -31,7 +33,14 @@ import { useTransactions } from "../hooks/useTransactions";
  */
 export function Transactions() {
   // Hooks
-  const { loading, error, stats, fetchByMonth } = useTransactions();
+  const {
+    loading,
+    error,
+    stats,
+    fetchByMonth,
+    createTransaction,
+    updateTransaction,
+  } = useTransactions();
 
   // Filter state
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth());
@@ -39,6 +48,11 @@ export function Transactions() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState("add");
+  const [activeTransaction, setActiveTransaction] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
   const categories = [
     "Groceries",
@@ -49,6 +63,38 @@ export function Transactions() {
     "Other",
   ];
 
+  const applyFilters = useCallback(
+    (data) => {
+      let filtered = data || [];
+
+      if (filterCategory !== "all") {
+        filtered = filtered.filter(
+          (t) => t.category.toLowerCase() === filterCategory.toLowerCase(),
+        );
+      }
+
+      if (filterType !== "all") {
+        filtered = filtered.filter((t) => t.type === filterType);
+      }
+
+      setFilteredTransactions(filtered);
+      return filtered;
+    },
+    [filterCategory, filterType],
+  );
+
+  const addToast = useCallback((message, type = "info") => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 3500);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
   /**
    * Fetch transactions when component mounts or filters change
    */
@@ -56,27 +102,11 @@ export function Transactions() {
     const loadTransactions = async () => {
       // Fetch transactions for selected month
       const data = await fetchByMonth(filterMonth + 1, filterYear);
-
-      // Apply client-side filtering
-      let filtered = data || [];
-
-      // Filter by category
-      if (filterCategory !== "all") {
-        filtered = filtered.filter(
-          (t) => t.category.toLowerCase() === filterCategory.toLowerCase(),
-        );
-      }
-
-      // Filter by type
-      if (filterType !== "all") {
-        filtered = filtered.filter((t) => t.type === filterType);
-      }
-
-      setFilteredTransactions(filtered);
+      applyFilters(data);
     };
 
     loadTransactions();
-  }, [filterMonth, filterYear, filterCategory, filterType, fetchByMonth]);
+  }, [filterMonth, filterYear, fetchByMonth, applyFilters]);
 
   /**
    * Handle filter changes
@@ -103,24 +133,62 @@ export function Transactions() {
    * Handle edit transaction (placeholder)
    */
   const handleEditTransaction = (transaction) => {
-    console.log("Edit transaction:", transaction);
-    // TODO: Day 9 - Open edit modal/form
+    setActiveTransaction(transaction);
+    setFormMode("edit");
+    setIsFormOpen(true);
   };
 
   /**
    * Handle delete transaction (placeholder)
    */
   const handleDeleteTransaction = (transactionId) => {
-    console.log("Delete transaction:", transactionId);
-    // TODO: Day 10 - Show confirmation and delete
+    addToast("Delete is planned for Day 10.", "info");
+    return transactionId;
   };
 
   /**
    * Handle add transaction (placeholder)
    */
   const handleAddTransaction = () => {
-    console.log("Add new transaction");
-    // TODO: Day 9 - Open add modal/form
+    setActiveTransaction(null);
+    setFormMode("add");
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setActiveTransaction(null);
+  };
+
+  const handleSubmitForm = async (payload) => {
+    setIsSubmitting(true);
+
+    const result =
+      formMode === "edit" && activeTransaction
+        ? await updateTransaction(
+            activeTransaction._id || activeTransaction.id,
+            payload,
+          )
+        : await createTransaction(payload);
+
+    if (!result.success) {
+      addToast(result.message || "Something went wrong.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+
+    addToast(
+      formMode === "edit"
+        ? "Transaction updated successfully."
+        : "Transaction added successfully.",
+      "success",
+    );
+
+    const refreshed = await fetchByMonth(filterMonth + 1, filterYear);
+    applyFilters(refreshed);
+
+    setIsSubmitting(false);
+    handleCloseForm();
   };
 
   return (
@@ -128,6 +196,16 @@ export function Transactions() {
       <Sidebar />
       <main id="main-content" className="flex-1 overflow-auto">
         <div className="container-responsive py-8 md:py-12">
+          <div className="fixed top-4 right-4 z-50 space-y-3">
+            {toasts.map((toast) => (
+              <Toast
+                key={toast.id}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => removeToast(toast.id)}
+              />
+            ))}
+          </div>
           {/* Page Header */}
           <section className="mb-8 md:mb-12">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -198,6 +276,16 @@ export function Transactions() {
           </section>
         </div>
       </main>
+
+      <TransactionForm
+        isOpen={isFormOpen}
+        mode={formMode}
+        initialData={activeTransaction}
+        categories={categories}
+        onSubmit={handleSubmitForm}
+        onClose={handleCloseForm}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }
