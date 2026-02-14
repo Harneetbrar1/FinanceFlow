@@ -278,6 +278,7 @@ export function Transactions() {
       </main>
 
       <TransactionForm
+        key={`${formMode}-${activeTransaction?._id || activeTransaction?.id || "new"}`}
         isOpen={isFormOpen}
         mode={formMode}
         initialData={activeTransaction}

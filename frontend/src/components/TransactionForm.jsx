@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { X } from "lucide-react";
 
@@ -51,42 +51,29 @@ export function TransactionForm({
     return DEFAULT_CATEGORIES;
   }, [categories]);
 
-  const [formData, setFormData] = useState({
-    amount: "",
-    category: categoryOptions[0] || "Other",
-    type: "expense",
-    date: formatDateInput(),
-    description: "",
-  });
-
-  const [formError, setFormError] = useState("");
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    setFormError("");
-
+  const createInitialFormData = () => {
     if (mode === "edit" && initialData) {
-      setFormData({
+      return {
         amount: String(initialData.amount ?? ""),
         category: initialData.category || categoryOptions[0] || "Other",
         type: initialData.type || "expense",
         date: formatDateInput(initialData.date),
         description: initialData.description || "",
-      });
-      return;
+      };
     }
 
-    setFormData({
+    return {
       amount: "",
       category: categoryOptions[0] || "Other",
       type: "expense",
       date: formatDateInput(),
       description: "",
-    });
-  }, [isOpen, mode, initialData, categoryOptions]);
+    };
+  };
+
+  const [formData, setFormData] = useState(createInitialFormData);
+
+  const [formError, setFormError] = useState("");
 
   if (!isOpen) {
     return null;
@@ -94,6 +81,9 @@ export function TransactionForm({
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    if (formError) {
+      setFormError("");
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
