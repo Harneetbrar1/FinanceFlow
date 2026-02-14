@@ -1,13 +1,13 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { Trash2, Edit2, DollarSign } from 'lucide-react';
+import React from "react";
+import PropTypes from "prop-types";
+import { Trash2, Edit2, DollarSign } from "lucide-react";
 
 /**
  * TransactionList Component
- * 
+ *
  * Displays a list of transactions in a table format.
  * Follows DRY principle - reusable across multiple pages.
- * 
+ *
  * Features:
  * - Responsive table layout
  * - Type-based color coding (income/expense)
@@ -15,7 +15,7 @@ import { Trash2, Edit2, DollarSign } from 'lucide-react';
  * - Edit/Delete action buttons
  * - Empty state handling
  * - Loading skeleton support
- * 
+ *
  * @param {Array} transactions - Array of transaction objects
  * @param {Boolean} loading - Is data loading
  * @param {Function} onEdit - Callback when edit button clicked
@@ -27,15 +27,15 @@ export function TransactionList({
   loading = false,
   onEdit = () => {},
   onDelete = () => {},
-  className = ''
+  className = "",
 }) {
   /**
    * Format currency for display
    */
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -43,10 +43,10 @@ export function TransactionList({
    * Format date for display
    */
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -54,9 +54,9 @@ export function TransactionList({
    * Get color classes based on transaction type and status
    */
   const getTypeClasses = (type) => {
-    return type === 'income'
-      ? 'text-green-600 bg-green-50'
-      : 'text-red-600 bg-red-50';
+    return type === "income"
+      ? "text-green-600 bg-green-50"
+      : "text-red-600 bg-red-50";
   };
 
   /**
@@ -64,12 +64,12 @@ export function TransactionList({
    */
   const getCategoryColor = (category) => {
     const colors = {
-      groceries: 'bg-blue-100 text-blue-800',
-      utilities: 'bg-yellow-100 text-yellow-800',
-      entertainment: 'bg-purple-100 text-purple-800',
-      transportation: 'bg-orange-100 text-orange-800',
-      salary: 'bg-green-100 text-green-800',
-      other: 'bg-gray-100 text-gray-800'
+      groceries: "bg-blue-100 text-blue-800",
+      utilities: "bg-yellow-100 text-yellow-800",
+      entertainment: "bg-purple-100 text-purple-800",
+      transportation: "bg-orange-100 text-orange-800",
+      salary: "bg-green-100 text-green-800",
+      other: "bg-gray-100 text-gray-800",
     };
     return colors[category.toLowerCase()] || colors.other;
   };
@@ -116,18 +116,28 @@ export function TransactionList({
       <h2 className="text-lg font-semibold text-gray-900 mb-6">
         Transaction History
       </h2>
-      
+
       {/* Desktop view - Table */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-gray-200">
               <th className="px-4 py-3 font-semibold text-gray-700">Date</th>
-              <th className="px-4 py-3 font-semibold text-gray-700">Category</th>
-              <th className="px-4 py-3 font-semibold text-gray-700">Description</th>
-              <th className="px-4 py-3 font-semibold text-gray-700 text-right">Amount</th>
-              <th className="px-4 py-3 font-semibold text-gray-700 text-center">Type</th>
-              <th className="px-4 py-3 font-semibold text-gray-700 text-center">Actions</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">
+                Category
+              </th>
+              <th className="px-4 py-3 font-semibold text-gray-700">
+                Description
+              </th>
+              <th className="px-4 py-3 font-semibold text-gray-700 text-right">
+                Amount
+              </th>
+              <th className="px-4 py-3 font-semibold text-gray-700 text-center">
+                Type
+              </th>
+              <th className="px-4 py-3 font-semibold text-gray-700 text-center">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -142,14 +152,14 @@ export function TransactionList({
                 <td className="px-4 py-3">
                   <span
                     className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getCategoryColor(
-                      transaction.category
+                      transaction.category,
                     )}`}
                   >
                     {transaction.category}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-700 max-w-xs truncate">
-                  {transaction.description || '-'}
+                  {transaction.description || "-"}
                 </td>
                 <td className="px-4 py-3 font-semibold text-right text-gray-900">
                   {formatCurrency(transaction.amount)}
@@ -157,10 +167,10 @@ export function TransactionList({
                 <td className="px-4 py-3 text-center">
                   <span
                     className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getTypeClasses(
-                      transaction.type
+                      transaction.type,
                     )}`}
                   >
-                    {transaction.type === 'income' ? '+' : '-'}{' '}
+                    {transaction.type === "income" ? "+" : "-"}{" "}
                     {transaction.type.charAt(0).toUpperCase() +
                       transaction.type.slice(1)}
                   </span>
@@ -176,7 +186,9 @@ export function TransactionList({
                       <Edit2 size={16} />
                     </button>
                     <button
-                      onClick={() => onDelete(transaction._id || transaction.id)}
+                      onClick={() =>
+                        onDelete(transaction._id || transaction.id)
+                      }
                       className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
                       title="Delete transaction"
                       aria-label="Delete transaction"
@@ -205,7 +217,7 @@ export function TransactionList({
                 </p>
                 <span
                   className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getCategoryColor(
-                    transaction.category
+                    transaction.category,
                   )}`}
                 >
                   {transaction.category}
@@ -213,17 +225,19 @@ export function TransactionList({
               </div>
               <span
                 className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getTypeClasses(
-                  transaction.type
+                  transaction.type,
                 )}`}
               >
-                {transaction.type === 'income' ? '+' : '-'}{' '}
+                {transaction.type === "income" ? "+" : "-"}{" "}
                 {transaction.type.charAt(0).toUpperCase() +
                   transaction.type.slice(1)}
               </span>
             </div>
 
             {transaction.description && (
-              <p className="text-sm text-gray-600 mb-2">{transaction.description}</p>
+              <p className="text-sm text-gray-600 mb-2">
+                {transaction.description}
+              </p>
             )}
 
             <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
@@ -265,13 +279,13 @@ TransactionList.propTypes = {
       category: PropTypes.string.isRequired,
       description: PropTypes.string,
       amount: PropTypes.number.isRequired,
-      type: PropTypes.oneOf(['income', 'expense']).isRequired
-    })
+      type: PropTypes.oneOf(["income", "expense"]).isRequired,
+    }),
   ),
   loading: PropTypes.bool,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
-  className: PropTypes.string
+  className: PropTypes.string,
 };
 
 export default TransactionList;
