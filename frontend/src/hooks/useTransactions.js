@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { transactionAPI } from '../utils/api';
+import logger from '../utils/logger';
 
 /**
  * Custom Hook: useTransactions
@@ -48,7 +49,7 @@ export const useTransactions = () => {
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to fetch transactions';
       setError(errorMsg);
-      console.error('Transaction fetch error:', err);
+      logger.error('Transaction fetch error:', err);
       return [];
     } finally {
       setLoading(false);
@@ -68,8 +69,46 @@ export const useTransactions = () => {
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to fetch monthly transactions';
       setError(errorMsg);
-      console.error('Monthly fetch error:', err);
+      logger.error('Monthly fetch error:', err);
       return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Create a new transaction
+   */
+  const createTransaction = useCallback(async (payload) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await transactionAPI.create(payload);
+      return { success: true, data: response.data.data };
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to create transaction';
+      setError(errorMsg);
+      logger.error('Transaction create error:', err);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Update an existing transaction
+   */
+  const updateTransaction = useCallback(async (transactionId, payload) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await transactionAPI.update(transactionId, payload);
+      return { success: true, data: response.data.data };
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to update transaction';
+      setError(errorMsg);
+      logger.error('Transaction update error:', err);
+      return { success: false, message: errorMsg };
     } finally {
       setLoading(false);
     }
@@ -123,6 +162,8 @@ export const useTransactions = () => {
     stats,
     fetchTransactions,
     fetchByMonth,
+    createTransaction,
+    updateTransaction,
     calculateTotals,
     refreshTransactions,
     setTransactions
