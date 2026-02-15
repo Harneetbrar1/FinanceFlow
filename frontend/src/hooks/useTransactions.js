@@ -115,6 +115,25 @@ export const useTransactions = () => {
   }, []);
 
   /**
+   * Delete a transaction
+   * Performs DELETE request and does NOT refetch automatically
+   * (calling component handles refetch based on UI context)
+   */
+  const deleteTransaction = useCallback(async (transactionId) => {
+    setError(null);
+    try {
+      const response = await transactionAPI.delete(transactionId);
+      logger.log(`Transaction ${transactionId} deleted successfully`);
+      return { success: true, data: response.data.data };
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to delete transaction';
+      setError(errorMsg);
+      logger.error('Transaction delete error:', err);
+      return { success: false, message: errorMsg };
+    }
+  }, []);
+
+  /**
    * Calculate income and expense totals from transactions
    * Uses client-side calculation to avoid extra API calls
    */
@@ -164,6 +183,7 @@ export const useTransactions = () => {
     fetchByMonth,
     createTransaction,
     updateTransaction,
+    deleteTransaction,
     calculateTotals,
     refreshTransactions,
     setTransactions
