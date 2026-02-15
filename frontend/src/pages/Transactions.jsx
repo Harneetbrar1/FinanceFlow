@@ -4,6 +4,7 @@ import { TransactionStats } from "../components/TransactionStats";
 import { TransactionFilter } from "../components/TransactionFilter";
 import { TransactionList } from "../components/TransactionList";
 import { TransactionForm } from "../components/TransactionForm";
+import { DeleteConfirmation } from "../components/DeleteConfirmation";
 import { Toast } from "../components/Toast";
 import { Plus, AlertCircle } from "lucide-react";
 import { useTransactions } from "../hooks/useTransactions";
@@ -40,6 +41,7 @@ export function Transactions() {
     fetchByMonth,
     createTransaction,
     updateTransaction,
+    deleteTransaction,
   } = useTransactions();
 
   // Filter state
@@ -53,6 +55,9 @@ export function Transactions() {
   const [activeTransaction, setActiveTransaction] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const categories = [
     "Groceries",
@@ -139,11 +144,46 @@ export function Transactions() {
   };
 
   /**
-   * Handle delete transaction (placeholder)
+   * Handle delete transaction - opens confirmation dialog
    */
-  const handleDeleteTransaction = (transactionId) => {
-    addToast("Delete is planned for Day 10.", "info");
-    return transactionId;
+  const handleDeleteTransaction = (transaction) => {
+    setTransactionToDelete(transaction);
+    setDeleteConfirmOpen(true);
+  };
+
+  /**
+   * Handle confirmed deletion - calls API and refreshes list
+   */
+  const handleConfirmDelete = async (transactionId) => {
+    setIsDeleting(true);
+
+    const result = await deleteTransaction(transactionId);
+
+    if (!result.success) {
+      addToast(result.message || "Failed to delete transaction.", "error");
+      setIsDeleting(false);
+      return;
+    }
+
+    addToast("Transaction deleted successfully.", "success");
+
+    // Refresh the transaction list
+    const refreshed = await fetchByMonth(filterMonth + 1, filterYear);
+    applyFilters(refreshed);
+
+    setIsDeleting(false);
+    setDeleteConfirmOpen(false);
+    setTransactionToDelete(null);
+  };
+
+  /**
+   * Handle close delete confirmation
+   */
+  const handleCloseDeleteConfirm = () => {
+    if (!isDeleting) {
+      setDeleteConfirmOpen(false);
+      setTransactionToDelete(null);
+    }
   };
 
   /**
@@ -286,6 +326,14 @@ export function Transactions() {
         onSubmit={handleSubmitForm}
         onClose={handleCloseForm}
         isSubmitting={isSubmitting}
+      />
+
+      <DeleteConfirmation
+        isOpen={deleteConfirmOpen}
+        onClose={handleCloseDeleteConfirm}
+        onConfirm={handleConfirmDelete}
+        transaction={transactionToDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );

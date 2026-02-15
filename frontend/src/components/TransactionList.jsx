@@ -186,9 +186,7 @@ export function TransactionList({
                       <Edit2 size={16} />
                     </button>
                     <button
-                      onClick={() =>
-                        onDelete(transaction._id || transaction.id)
-                      }
+                      onClick={() => onDelete(transaction)}
                       className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
                       title="Delete transaction"
                       aria-label="Delete transaction"
