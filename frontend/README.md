@@ -101,6 +101,7 @@ npm run test:coverage
 Current test suite includes **19 comprehensive tests** across 3 key components:
 
 #### DeleteConfirmation Component (6 tests)
+
 - Modal rendering with transaction details
 - Cancel button interaction
 - Delete button confirmation
@@ -111,6 +112,7 @@ Current test suite includes **19 comprehensive tests** across 3 key components:
 **Coverage**: User interactions, confirmation flow, accessibility
 
 #### Toast Component (6 tests)
+
 - Success message rendering
 - Error message rendering
 - Info message rendering
@@ -121,6 +123,7 @@ Current test suite includes **19 comprehensive tests** across 3 key components:
 **Coverage**: Type variants, dismissal, accessibility compliance
 
 #### TransactionForm Component (7 tests)
+
 - Add mode rendering
 - Edit mode with pre-filled data
 - Modal hide when closed
@@ -157,23 +160,27 @@ npm test -- --reporter=verbose
 ## Features Implemented
 
 ### ✅ Full CRUD for Transactions
+
 - **Create**: Add new transactions via modal form
 - **Read**: Display transactions in list with filtering
 - **Update**: Edit existing transactions
 - **Delete**: Delete with confirmation dialog (tested)
 
 ### ✅ Filtering & Sorting
+
 - Filter by month and year
 - Filter by category
 - Filter by type (income/expense)
 - Clear all filters
 
 ### ✅ User Feedback
+
 - Success/error/info toast notifications
 - Loading states
 - Error messages
 
 ### ⚠️ Partial Implementation (Phase 2)
+
 - **Budget**: View only (no edit/delete)
 - **Credit Cards**: Placeholder UI
 - **Emergency Fund**: Calculator only
@@ -184,6 +191,7 @@ npm test -- --reporter=verbose
 Frontend connects to backend API at `http://localhost:5000/api`
 
 Configure in `.env`:
+
 ```
 VITE_API_URL=http://localhost:5000/api
 ```
@@ -200,15 +208,18 @@ See [backend README](../backend/README.md) for backend setup.
 ## Troubleshooting
 
 ### Tests fail with "Cannot find module"
+
 ```bash
 npm install
 npm run test -- --clearCache
 ```
 
 ### VITE_API_URL not found
+
 Ensure `.env` file exists in frontend directory with proper API URL.
 
 ### Tailwind styles not applying
+
 ```bash
 npm install --save-dev tailwindcss
 npm run dev
