@@ -1,54 +1,109 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useTransactions } from "../hooks/useTransactions";
+import { useBudgets } from "../hooks/useBudgets";
 import { Sidebar } from "../components/Sidebar";
 import { Card } from "../components/Card";
-import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  ArrowUpRight,
+  ArrowDownLeft,
+} from "lucide-react";
 
 /**
  * Dashboard Page - Main authenticated view
  *
  * Features:
- * - Sidebar navigation for all financial features
- * - Quick stats overview with icons and trends
- * - Recent transactions preview
- * - Spending by category chart placeholder
- * - Budget overview sidebar
- * - Quick action buttons
+ * - Real-time financial stats from transactions
+ * - Recent transactions display
+ * - Budget utilization tracking
+ * - Quick action links
  * - Responsive design with mobile support
+ *
+ * Updates (Day 11):
+ * - Integrated real transaction data for stats
+ * - Display recent transactions (last 5)
+ * - Calculate budget utilization from budgets
+ * - Removed mock data
  */
 export function Dashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({
-    totalIncome: 0,
-    totalExpenses: 0,
-    balance: 0,
-    budgetUtilization: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const {
+    transactions,
+    stats,
+    fetchTransactions,
+    loading: transactionsLoading,
+  } = useTransactions();
+  const { budgets, fetchBudgets, loading: budgetsLoading } = useBudgets();
 
   useEffect(() => {
-    // Simulate loading stats
-    const loadStats = async () => {
-      try {
-        // TODO: Fetch real data from API when backend is ready
-        setStats({
-          totalIncome: 4500,
-          totalExpenses: 2800,
-          balance: 1700,
-          budgetUtilization: 65,
-        });
-      } catch (error) {
-        // Development environment logging only
-        if (process.env.NODE_ENV !== "production") {
-          console.error("Error loading dashboard stats:", error);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Fetch all transactions and current month budgets
+    fetchTransactions();
 
-    loadStats();
-  }, []);
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    fetchBudgets({ month: currentMonth, year: currentYear });
+  }, [fetchTransactions, fetchBudgets]);
+
+  /**
+   * Calculate budget utilization percentage
+   * Shows what percentage of total budget has been spent
+   */
+  const calculateBudgetUtilization = () => {
+    if (budgets.length === 0) return 0;
+
+    const totalBudget = budgets.reduce((sum, b) => sum + (b.limit || 0), 0);
+    if (totalBudget === 0) return 0;
+
+    // Calculate spending per budget category
+    const totalSpent = budgets.reduce((sum, budget) => {
+      const categorySpending = transactions
+        .filter((t) => {
+          const transactionDate = new Date(t.date);
+          const transactionMonth = transactionDate.getMonth() + 1;
+          const transactionYear = transactionDate.getFullYear();
+
+          return (
+            t.type === "expense" &&
+            t.category.toLowerCase() === budget.category.toLowerCase() &&
+            transactionMonth === budget.month &&
+            transactionYear === budget.year
+          );
+        })
+        .reduce((acc, t) => acc + (t.amount || 0), 0);
+
+      return sum + categorySpending;
+    }, 0);
+
+    return Math.round((totalSpent / totalBudget) * 100);
+  };
+
+  /**
+   * Format currency for display
+   */
+  const formatCurrency = (amount) => {
+    return `$${Math.abs(amount).toFixed(2)}`;
+  };
+
+  /**
+   * Format date for display
+   */
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  const budgetUtilization = calculateBudgetUtilization();
+  const loading = transactionsLoading || budgetsLoading;
+
+  // Get recent transactions (last 5)
+  const recentTransactions = transactions
+    .slice()
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
 
   if (loading) {
     return (
@@ -87,18 +142,18 @@ export function Dashboard() {
               />
               <Card
                 label="Total Expenses"
-                value={`$${stats.totalExpenses.toLocaleString()}`}
+                value={`$${stats.totalExpense.toLocaleString()}`}
                 icon={<TrendingDown className="w-5 h-5 text-danger-600" />}
                 trend="down"
               />
               <Card
                 label="Balance"
-                value={`$${stats.balance.toLocaleString()}`}
+                value={`$${stats.netIncome.toLocaleString()}`}
                 icon={<TrendingUp className="w-5 h-5 text-primary-600" />}
               />
               <Card
                 label="Budget Used"
-                value={`${stats.budgetUtilization}%`}
+                value={`${budgetUtilization}%`}
                 icon={<AlertCircle className="w-5 h-5 text-warning-600" />}
               />
             </div>
@@ -122,9 +177,54 @@ export function Dashboard() {
                   </a>
                 </div>
                 <div className="border-t border-gray-200 pt-4">
-                  <p className="text-center py-8 text-gray-500">
-                    No transactions yet. Start tracking your finances!
-                  </p>
+                  {recentTransactions.length > 0 ? (
+                    <div className="space-y-3">
+                      {recentTransactions.map((transaction) => (
+                        <div
+                          key={transaction._id || transaction.id}
+                          className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`p-2 rounded-lg ${
+                                transaction.type === "income"
+                                  ? "bg-success-50"
+                                  : "bg-danger-50"
+                              }`}
+                            >
+                              {transaction.type === "income" ? (
+                                <ArrowUpRight className="w-4 h-4 text-success-600" />
+                              ) : (
+                                <ArrowDownLeft className="w-4 h-4 text-danger-600" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900 capitalize">
+                                {transaction.category}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatDate(transaction.date)}
+                              </p>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-sm font-semibold ${
+                              transaction.type === "income"
+                                ? "text-success-600"
+                                : "text-danger-600"
+                            }`}
+                          >
+                            {transaction.type === "income" ? "+" : "-"}
+                            {formatCurrency(transaction.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center py-8 text-gray-500">
+                      No transactions yet. Start tracking your finances!
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -146,36 +246,64 @@ export function Dashboard() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4">
                   Budget Overview
                 </h3>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Groceries
-                      </span>
-                      <span className="text-sm text-gray-600">$340 / $400</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-success-600 h-2 rounded-full"
-                        style={{ width: "85%" }}
-                      ></div>
-                    </div>
+                {budgets.length > 0 ? (
+                  <div className="space-y-4">
+                    {budgets.slice(0, 3).map((budget) => {
+                      const categorySpending = transactions
+                        .filter((t) => {
+                          const transactionDate = new Date(t.date);
+                          const transactionMonth =
+                            transactionDate.getMonth() + 1;
+                          const transactionYear = transactionDate.getFullYear();
+
+                          return (
+                            t.type === "expense" &&
+                            t.category.toLowerCase() ===
+                              budget.category.toLowerCase() &&
+                            transactionMonth === budget.month &&
+                            transactionYear === budget.year
+                          );
+                        })
+                        .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+                      const percentage = Math.min(
+                        (categorySpending / budget.limit) * 100,
+                        100,
+                      );
+                      const isOverBudget = categorySpending > budget.limit;
+
+                      return (
+                        <div key={budget._id || budget.id}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700 capitalize">
+                              {budget.category}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              ${categorySpending.toFixed(0)} / $
+                              {budget.limit.toFixed(0)}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all ${
+                                isOverBudget
+                                  ? "bg-danger-600"
+                                  : percentage > 75
+                                    ? "bg-warning-600"
+                                    : "bg-success-600"
+                              }`}
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Entertainment
-                      </span>
-                      <span className="text-sm text-gray-600">$125 / $100</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-warning-600 h-2 rounded-full"
-                        style={{ width: "125%" }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    No budgets set for this month
+                  </p>
+                )}
                 <a
                   href="/budgets"
                   className="mt-4 block text-center btn-secondary py-2 text-sm"
