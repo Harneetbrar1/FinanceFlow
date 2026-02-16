@@ -95,16 +95,25 @@ export function Register() {
         hourlyWage: parseFloat(formData.hourlyWage),
       });
 
+      console.log("Registration result:", result);
+
       if (result.success) {
         navigate("/dashboard");
       } else {
-        setError(result.error || "Registration failed. Please try again.");
+        const errorMsg =
+          result.error ||
+          result.message ||
+          "Registration failed. Please try again.";
+        console.error("Registration failed:", errorMsg);
+        setError(errorMsg);
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
-      if (process.env.NODE_ENV !== "production") {
-        console.error("Registration error:", err);
-      }
+      console.error("Registration exception:", err);
+      const errorMsg =
+        err.response?.data?.message ||
+        err.message ||
+        "An error occurred. Please try again.";
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
