@@ -1,51 +1,169 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Card } from "../components/Card";
+import { BudgetList } from "../components/BudgetList";
+import { AddBudget } from "../components/AddBudget";
+import { Toast } from "../components/Toast";
+import { useBudgets } from "../hooks/useBudgets";
+import { useTransactions } from "../hooks/useTransactions";
 import { BarChart3, Plus, TrendingDown } from "lucide-react";
 
 /**
  * Budgets Page
  *
  * Features:
- * - Overall budget summary
- * - Category-based budget tracking
+ * - Real-time budget tracking with API integration
+ * - Current month budgets displayed by default
+ * - Category-based budget tracking with spending calculation
  * - Progress indicators with color coding (green/yellow/red)
- * - Add/Edit budget functionality
+ * - Add budget functionality (no edit/delete per Day 11 scope)
  * - Responsive design
- * - Placeholder for upcoming features
+ * - Loading and error states
  *
- * TODO: Hook up to backend API for real budget data
- * TODO: Implement budget CRUD operations
- * TODO: Add budget alerts/notifications
- * TODO: Add monthly budget comparison chart
+ * Implementation:
+ * - Uses useBudgets hook for budget data
+ * - Uses useTransactions hook for spending calculation
+ * - BudgetList component displays budgets with real-time spending
+ * - AddBudget modal for creating new budgets
  */
 export function Budgets() {
-  const [budgets] = useState([
-    { category: "Groceries", budget: 400, spent: 340, id: 1 },
-    { category: "Entertainment", budget: 100, spent: 125, id: 2 },
-    { category: "Utilities", budget: 200, spent: 180, id: 3 },
-    { category: "Transportation", budget: 150, spent: 140, id: 4 },
-  ]);
+  const {
+    budgets,
+    loading: budgetsLoading,
+    fetchBudgets,
+    createBudget,
+  } = useBudgets();
+  const {
+    transactions,
+    loading: transactionsLoading,
+    fetchTransactions,
+  } = useTransactions();
+
+  const [addBudgetOpen, setAddBudgetOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
 
   /**
-   * Determine progress bar color based on spending percentage
-   * Green: 0-75%
-   * Yellow: 75-100%
-   * Red: 100%+
+   * Fetch budgets and transactions on component mount
+   * Defaults to current month for focused view
    */
-  const getProgressColor = (spent, budget) => {
-    const percentage = (spent / budget) * 100;
-    if (percentage > 100) return "bg-danger-600";
-    if (percentage > 75) return "bg-warning-600";
-    return "bg-success-600";
+  useEffect(() => {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+
+    fetchBudgets({ month: currentMonth, year: currentYear });
+    fetchTransactions();
+  }, [fetchBudgets, fetchTransactions]);
+
+  /**
+   * Calculate spending per category from transactions
+   * @param {String} category - Category name
+   * @param {Number} month - Month number (1-12)
+   * @param {Number} year - Year
+   * @returns {Number} - Total spending for category in that month
+   */
+  const calculateSpending = (category, month, year) => {
+    return transactions
+      .filter((t) => {
+        const transactionDate = new Date(t.date);
+        const transactionMonth = transactionDate.getMonth() + 1;
+        const transactionYear = transactionDate.getFullYear();
+
+        return (
+          t.type === "expense" &&
+          t.category.toLowerCase() === category.toLowerCase() &&
+          transactionMonth === month &&
+          transactionYear === year
+        );
+      })
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
   };
 
   /**
-   * Calculate total budget and spending
+   * Calculate total budget and spending across all budgets
    */
-  const totalBudget = budgets.reduce((sum, b) => sum + b.budget, 0);
-  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
+  const totalBudget = budgets.reduce((sum, b) => sum + (b.limit || 0), 0);
+  const totalSpent = budgets.reduce((sum, b) => {
+    const spent = calculateSpending(b.category, b.month, b.year);
+    return sum + spent;
+  }, 0);
   const totalRemaining = totalBudget - totalSpent;
+
+  /**
+   * Handle opening the AddBudget modal
+   */
+  const handleAddBudgetClick = () => {
+    setAddBudgetOpen(true);
+  };
+
+  /**
+   * Handle closing the AddBudget modal
+   */
+  const handleCloseAddBudget = () => {
+    setAddBudgetOpen(false);
+  };
+
+  /**
+   * Handle budget creation
+   * Creates budget via API and refreshes list
+   * @param {Object} budgetData - Budget data from form
+   */
+  const handleCreateBudget = async (budgetData) => {
+    setIsCreating(true);
+
+    const result = await createBudget(budgetData);
+
+    if (result.success) {
+      setToast({
+        show: true,
+        message: `Budget for ${budgetData.category} created successfully!`,
+        type: "success",
+      });
+      setAddBudgetOpen(false);
+
+      // Refresh budgets to show the new one
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+      fetchBudgets({ month: currentMonth, year: currentYear });
+    } else {
+      setToast({
+        show: true,
+        message: result.message || "Failed to create budget",
+        type: "error",
+      });
+    }
+
+    setIsCreating(false);
+  };
+
+  /**
+   * Handle toast close
+   */
+  const handleCloseToast = () => {
+    setToast({ ...toast, show: false });
+  };
+
+  // Loading state
+  const loading = budgetsLoading || transactionsLoading;
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar />
+        <main id="main-content" className="flex-1 overflow-auto">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -63,7 +181,10 @@ export function Budgets() {
                   Monitor and control your spending
                 </p>
               </div>
-              <button className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={handleAddBudgetClick}
+                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+              >
                 <Plus size={20} />
                 Add Budget
               </button>
@@ -97,84 +218,27 @@ export function Budgets() {
 
           {/* Budgets List */}
           <section>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {budgets.map((budget) => {
-                const percentage = Math.min(
-                  (budget.spent / budget.budget) * 100,
-                  100,
-                );
-                const isOver = budget.spent > budget.budget;
-
-                return (
-                  <div key={budget.id} className="card p-6">
-                    {/* Category Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-bold text-gray-900">
-                        {budget.category}
-                      </h3>
-                      <button className="text-gray-400 hover:text-gray-600 transition">
-                        ⋮
-                      </button>
-                    </div>
-
-                    {/* Spending Summary */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-2xl font-bold text-gray-900">
-                          ${budget.spent.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          of ${budget.budget.toLocaleString()}
-                        </p>
-                      </div>
-                      <div
-                        className={`
-                          text-center px-3 py-1 rounded-lg
-                          ${isOver ? "bg-danger-50 text-danger-700" : "bg-success-50 text-success-700"}
-                        `}
-                      >
-                        <p className="font-semibold text-sm">
-                          {isOver ? "Over" : "On track"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mb-2">
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div
-                          className={`${getProgressColor(budget.spent, budget.budget)} h-3 rounded-full transition-all duration-300`}
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Percentage */}
-                    <div className="text-right text-sm text-gray-600">
-                      {Math.round(percentage)}% used
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Empty State */}
-            {budgets.length === 0 && (
-              <div className="card p-12">
-                <div className="text-center">
-                  <BarChart3 size={48} className="mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-medium text-gray-900">
-                    No budgets yet
-                  </p>
-                  <p className="text-sm text-gray-600 mt-2">
-                    Create your first budget to monitor spending
-                  </p>
-                </div>
-              </div>
-            )}
+            <BudgetList budgets={budgets} transactions={transactions} />
           </section>
         </div>
       </main>
+
+      {/* AddBudget Modal */}
+      <AddBudget
+        isOpen={addBudgetOpen}
+        onSubmit={handleCreateBudget}
+        onClose={handleCloseAddBudget}
+        isSubmitting={isCreating}
+      />
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={handleCloseToast}
+        />
+      )}
     </div>
   );
 }
