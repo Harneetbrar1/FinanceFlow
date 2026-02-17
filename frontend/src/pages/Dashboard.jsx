@@ -1,15 +1,22 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTransactions } from "../hooks/useTransactions";
 import { useBudgets } from "../hooks/useBudgets";
+import { useBudgetCalculations } from "../hooks/useBudgetCalculations";
 import { Sidebar } from "../components/Sidebar";
 import { Card } from "../components/Card";
+import { DashboardSkeleton } from "../components/LoadingSkeleton";
+import { formatCurrency, formatDate } from "../utils/formatters";
 import {
   TrendingUp,
   TrendingDown,
   AlertCircle,
   ArrowUpRight,
   ArrowDownLeft,
+  Plus,
+  BarChart3,
+  Wallet,
 } from "lucide-react";
 
 /**
@@ -21,12 +28,23 @@ import {
  * - Budget utilization tracking
  * - Quick action links
  * - Responsive design with mobile support
+ * - Loading skeletons for better UX
+ * - Optimized performance with useMemo
  *
  * Updates (Day 11):
  * - Integrated real transaction data for stats
  * - Display recent transactions (last 5)
  * - Calculate budget utilization from budgets
  * - Removed mock data
+ *
+ * Updates (Day 12):
+ * - Extracted formatting utils (DRY principle)
+ * - Created useBudgetCalculations hook (DRY principle)
+ * - Added loading skeletons
+ * - Fixed Quick Actions navigation
+ * - Optimized with useMemo
+ * - Improved empty states
+ * - Enhanced responsiveness
  */
 export function Dashboard() {
   const { user } = useAuth();
@@ -37,6 +55,8 @@ export function Dashboard() {
     loading: transactionsLoading,
   } = useTransactions();
   const { budgets, fetchBudgets, loading: budgetsLoading } = useBudgets();
+  const { calculateTotalUtilization, getEnrichedBudgets, getProgressColor } =
+    useBudgetCalculations(budgets, transactions);
 
   useEffect(() => {
     // Fetch all transactions and current month budgets
@@ -46,73 +66,32 @@ export function Dashboard() {
     const currentMonth = currentDate.getMonth() + 1;
     const currentYear = currentDate.getFullYear();
     fetchBudgets({ month: currentMonth, year: currentYear });
-  }, [fetchTransactions, fetchBudgets]);
+  }, []);
 
-  /**
-   * Calculate budget utilization percentage
-   * Shows what percentage of total budget has been spent
-   */
-  const calculateBudgetUtilization = () => {
-    if (budgets.length === 0) return 0;
+  // Memoized calculations for performance
+  const recentTransactions = useMemo(() => {
+    return transactions
+      .slice()
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+  }, [transactions]);
 
-    const totalBudget = budgets.reduce((sum, b) => sum + (b.limit || 0), 0);
-    if (totalBudget === 0) return 0;
+  const enrichedBudgets = useMemo(() => {
+    return getEnrichedBudgets.slice(0, 3); // Show top 3 budgets
+  }, [getEnrichedBudgets]);
 
-    // Calculate spending per budget category
-    const totalSpent = budgets.reduce((sum, budget) => {
-      const categorySpending = transactions
-        .filter((t) => {
-          const transactionDate = new Date(t.date);
-          const transactionMonth = transactionDate.getMonth() + 1;
-          const transactionYear = transactionDate.getFullYear();
+  const budgetUtilization = useMemo(() => {
+    return calculateTotalUtilization;
+  }, [calculateTotalUtilization]);
 
-          return (
-            t.type === "expense" &&
-            t.category.toLowerCase() === budget.category.toLowerCase() &&
-            transactionMonth === budget.month &&
-            transactionYear === budget.year
-          );
-        })
-        .reduce((acc, t) => acc + (t.amount || 0), 0);
-
-      return sum + categorySpending;
-    }, 0);
-
-    return Math.round((totalSpent / totalBudget) * 100);
-  };
-
-  /**
-   * Format currency for display
-   */
-  const formatCurrency = (amount) => {
-    return `$${Math.abs(amount).toFixed(2)}`;
-  };
-
-  /**
-   * Format date for display
-   */
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
-
-  const budgetUtilization = calculateBudgetUtilization();
   const loading = transactionsLoading || budgetsLoading;
-
-  // Get recent transactions (last 5)
-  const recentTransactions = transactions
-    .slice()
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 5);
 
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-50">
         <Sidebar />
         <main id="main-content" className="flex-1 overflow-auto">
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-          </div>
+          <DashboardSkeleton />
         </main>
       </div>
     );
@@ -169,12 +148,12 @@ export function Dashboard() {
                   <h2 className="text-xl font-bold text-gray-900">
                     Recent Transactions
                   </h2>
-                  <a
-                    href="/transactions"
-                    className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                  <Link
+                    to="/transactions"
+                    className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors"
                   >
                     View All →
-                  </a>
+                  </Link>
                 </div>
                 <div className="border-t border-gray-200 pt-4">
                   {recentTransactions.length > 0 ? (
@@ -182,7 +161,7 @@ export function Dashboard() {
                       {recentTransactions.map((transaction) => (
                         <div
                           key={transaction._id || transaction.id}
-                          className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+                          className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-lg px-2 transition-colors"
                         >
                           <div className="flex items-center gap-3">
                             <div
@@ -214,16 +193,29 @@ export function Dashboard() {
                                 : "text-danger-600"
                             }`}
                           >
-                            {transaction.type === "income" ? "+" : "-"}
-                            {formatCurrency(transaction.amount)}
+                            {formatCurrency(transaction.amount, true)}
                           </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center py-8 text-gray-500">
-                      No transactions yet. Start tracking your finances!
-                    </p>
+                    <div className="text-center py-12">
+                      <Wallet className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 font-medium mb-1">
+                        No transactions yet
+                      </p>
+                      <p className="text-sm text-gray-400 mb-4">
+                        Start tracking your finances by adding your first
+                        transaction
+                      </p>
+                      <Link
+                        to="/transactions"
+                        className="inline-flex items-center gap-2 btn-primary px-4 py-2 text-sm"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Transaction
+                      </Link>
+                    </div>
                   )}
                 </div>
               </div>
@@ -233,8 +225,12 @@ export function Dashboard() {
                 <h2 className="text-xl font-bold text-gray-900 mb-6">
                   Spending by Category
                 </h2>
-                <div className="h-64 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
-                  <p>Chart placeholder - Coming soon</p>
+                <div className="h-64 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+                  <BarChart3 className="w-12 h-12 mb-3" />
+                  <p className="font-medium">Chart Coming Soon</p>
+                  <p className="text-sm mt-1">
+                    Visualize your spending patterns
+                  </p>
                 </div>
               </div>
             </div>
@@ -246,70 +242,55 @@ export function Dashboard() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4">
                   Budget Overview
                 </h3>
-                {budgets.length > 0 ? (
+                {enrichedBudgets.length > 0 ? (
                   <div className="space-y-4">
-                    {budgets.slice(0, 3).map((budget) => {
-                      const categorySpending = transactions
-                        .filter((t) => {
-                          const transactionDate = new Date(t.date);
-                          const transactionMonth =
-                            transactionDate.getMonth() + 1;
-                          const transactionYear = transactionDate.getFullYear();
-
-                          return (
-                            t.type === "expense" &&
-                            t.category.toLowerCase() ===
-                              budget.category.toLowerCase() &&
-                            transactionMonth === budget.month &&
-                            transactionYear === budget.year
-                          );
-                        })
-                        .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-                      const percentage = Math.min(
-                        (categorySpending / budget.limit) * 100,
-                        100,
-                      );
-                      const isOverBudget = categorySpending > budget.limit;
-
-                      return (
-                        <div key={budget._id || budget.id}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700 capitalize">
-                              {budget.category}
-                            </span>
-                            <span className="text-sm text-gray-600">
-                              ${categorySpending.toFixed(0)} / $
-                              {budget.limit.toFixed(0)}
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full transition-all ${
-                                isOverBudget
-                                  ? "bg-danger-600"
-                                  : percentage > 75
-                                    ? "bg-warning-600"
-                                    : "bg-success-600"
-                              }`}
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
+                    {enrichedBudgets.map((budget) => (
+                      <div key={budget._id || budget.id}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700 capitalize">
+                            {budget.category}
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {formatCurrency(budget.spent)} /{" "}
+                            {formatCurrency(budget.limit)}
+                          </span>
                         </div>
-                      );
-                    })}
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${getProgressColor(
+                              budget.status,
+                            )}`}
+                            style={{
+                              width: `${Math.min(budget.percentage, 100)}%`,
+                            }}
+                          ></div>
+                        </div>
+                        {budget.isOverBudget && (
+                          <p className="text-xs text-danger-600 mt-1">
+                            Over budget by{" "}
+                            {formatCurrency(budget.spent - budget.limit)}
+                          </p>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    No budgets set for this month
-                  </p>
+                  <div className="text-center py-8">
+                    <AlertCircle className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 font-medium mb-1">
+                      No budgets set
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Create budgets to track spending
+                    </p>
+                  </div>
                 )}
-                <a
-                  href="/budgets"
+                <Link
+                  to="/budgets"
                   className="mt-4 block text-center btn-secondary py-2 text-sm"
                 >
                   Manage Budgets
-                </a>
+                </Link>
               </div>
 
               {/* Quick Actions */}
@@ -318,24 +299,27 @@ export function Dashboard() {
                   Quick Actions
                 </h3>
                 <div className="space-y-2">
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition text-sm font-medium"
+                  <Link
+                    to="/transactions"
+                    className="flex items-center gap-2 px-4 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition text-sm font-medium"
                   >
-                    + Add Transaction
-                  </a>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition text-sm font-medium"
+                    <Plus className="w-4 h-4" />
+                    Add Transaction
+                  </Link>
+                  <Link
+                    to="/budgets"
+                    className="flex items-center gap-2 px-4 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition text-sm font-medium"
                   >
-                    + Set Budget
-                  </a>
-                  <a
-                    href="#"
-                    className="block px-4 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition text-sm font-medium"
+                    <AlertCircle className="w-4 h-4" />
+                    Set Budget
+                  </Link>
+                  <Link
+                    to="/transactions"
+                    className="flex items-center gap-2 px-4 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition text-sm font-medium"
                   >
-                    📊 View Reports
-                  </a>
+                    <BarChart3 className="w-4 h-4" />
+                    View Reports
+                  </Link>
                 </div>
               </div>
             </div>
