@@ -1,6 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { AlertCircle, TrendingUp } from "lucide-react";
+import { useBudgetCalculations } from "../hooks/useBudgetCalculations";
+import { formatCurrency } from "../utils/formatters";
 
 /**
  * BudgetList Component
@@ -13,76 +15,21 @@ import { AlertCircle, TrendingUp } from "lucide-react";
  * - Responsive grid layout
  * - Empty state when no budgets exist
  *
+ * Updates (Day 12):
+ * - Refactored to use useBudgetCalculations hook (DRY principle)
+ * - Uses formatCurrency utility (DRY principle)
+ * - Improved code reusability and maintainability
+ *
  * @component
  * @param {Object} props
  * @param {Array} props.budgets - Array of budget objects
  * @param {Array} props.transactions - Array of transaction objects (to calculate spending)
  */
 export function BudgetList({ budgets = [], transactions = [] }) {
-  /**
-   * Calculate total spending for a specific category from transactions
-   * Only counts expense transactions for the category
-   *
-   * @param {String} category - Category name to calculate spending for
-   * @param {Number} month - Month number (1-12)
-   * @param {Number} year - Year (e.g., 2026)
-   * @returns {Number} - Total spending for the category in that month
-   */
-  const calculateSpending = (category, month, year) => {
-    return transactions
-      .filter((t) => {
-        const transactionDate = new Date(t.date);
-        const transactionMonth = transactionDate.getMonth() + 1; // getMonth() is 0-indexed
-        const transactionYear = transactionDate.getFullYear();
-
-        return (
-          t.type === "expense" &&
-          t.category.toLowerCase() === category.toLowerCase() &&
-          transactionMonth === month &&
-          transactionYear === year
-        );
-      })
-      .reduce((sum, t) => sum + (t.amount || 0), 0);
-  };
-
-  /**
-   * Determine progress bar color based on spending percentage
-   * Green: 0-75% (safe)
-   * Yellow: 75-100% (warning)
-   * Red: 100%+ (over budget)
-   *
-   * @param {Number} spent - Amount spent
-   * @param {Number} budget - Budget limit
-   * @returns {String} - Tailwind CSS color classes
-   */
-  const getProgressColor = (spent, budget) => {
-    const percentage = (spent / budget) * 100;
-    if (percentage > 100) return "bg-danger-600";
-    if (percentage > 75) return "bg-warning-600";
-    return "bg-success-600";
-  };
-
-  /**
-   * Get text color for remaining amount based on budget status
-   *
-   * @param {Number} remaining - Remaining budget amount
-   * @returns {String} - Tailwind CSS text color class
-   */
-  const getRemainingColor = (remaining) => {
-    if (remaining < 0) return "text-danger-600";
-    if (remaining < 50) return "text-warning-600";
-    return "text-success-600";
-  };
-
-  /**
-   * Format currency values
-   *
-   * @param {Number} amount - Amount to format
-   * @returns {String} - Formatted currency string
-   */
-  const formatCurrency = (amount) => {
-    return `$${Math.abs(amount).toFixed(2)}`;
-  };
+  const { getEnrichedBudgets, getProgressColor } = useBudgetCalculations(
+    budgets,
+    transactions,
+  );
 
   // Empty state
   if (!budgets || budgets.length === 0) {
@@ -97,18 +44,17 @@ export function BudgetList({ budgets = [], transactions = [] }) {
     );
   }
 
+  const enrichedBudgets = getEnrichedBudgets;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {budgets.map((budget) => {
-        const spent = calculateSpending(
-          budget.category,
-          budget.month,
-          budget.year,
-        );
-        const remaining = budget.limit - spent;
-        const percentage = Math.min((spent / budget.limit) * 100, 100);
-        const progressColor = getProgressColor(spent, budget.limit);
-        const remainingColor = getRemainingColor(remaining);
+      {enrichedBudgets.map((budget) => {
+        const remainingColor =
+          budget.remaining < 0
+            ? "text-danger-600"
+            : budget.remaining < 50
+              ? "text-warning-600"
+              : "text-success-600";
 
         return (
           <div key={budget._id || budget.id} className="card p-6">
@@ -129,7 +75,7 @@ export function BudgetList({ budgets = [], transactions = [] }) {
                 </p>
               </div>
               <TrendingUp
-                className={`w-5 h-5 ${remaining >= 0 ? "text-success-600" : "text-danger-600"}`}
+                className={`w-5 h-5 ${budget.remaining >= 0 ? "text-success-600" : "text-danger-600"}`}
               />
             </div>
 
@@ -138,20 +84,21 @@ export function BudgetList({ budgets = [], transactions = [] }) {
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-gray-600">Spent</span>
                 <span className="font-medium text-gray-900">
-                  {formatCurrency(spent)} / {formatCurrency(budget.limit)}
+                  {formatCurrency(budget.spent)} /{" "}
+                  {formatCurrency(budget.limit)}
                 </span>
               </div>
 
               {/* Progress Bar */}
               <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div
-                  className={`h-full ${progressColor} transition-all duration-300`}
-                  style={{ width: `${percentage}%` }}
+                  className={`h-full ${getProgressColor(budget.status)} transition-all duration-300`}
+                  style={{ width: `${budget.percentage}%` }}
                   role="progressbar"
-                  aria-valuenow={percentage}
+                  aria-valuenow={budget.percentage}
                   aria-valuemin="0"
                   aria-valuemax="100"
-                  aria-label={`Budget used: ${percentage.toFixed(0)}%`}
+                  aria-label={`Budget used: ${budget.percentage}%`}
                 />
               </div>
             </div>
@@ -160,17 +107,17 @@ export function BudgetList({ budgets = [], transactions = [] }) {
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Remaining</span>
               <span className={`text-lg font-bold ${remainingColor}`}>
-                {remaining < 0 ? "-" : ""}
-                {formatCurrency(remaining)}
+                {budget.remaining < 0 ? "-" : ""}
+                {formatCurrency(budget.remaining)}
               </span>
             </div>
 
             {/* Over Budget Warning */}
-            {remaining < 0 && (
+            {budget.isOverBudget && (
               <div className="mt-3 px-3 py-2 bg-danger-50 border border-danger-200 rounded-md">
                 <p className="text-sm text-danger-800 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
-                  Over budget by {formatCurrency(Math.abs(remaining))}
+                  Over budget by {formatCurrency(Math.abs(budget.remaining))}
                 </p>
               </div>
             )}
