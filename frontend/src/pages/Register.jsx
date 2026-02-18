@@ -95,8 +95,6 @@ export function Register() {
         hourlyWage: parseFloat(formData.hourlyWage),
       });
 
-      console.log("Registration result:", result);
-
       if (result.success) {
         navigate("/dashboard");
       } else {

@@ -88,8 +88,12 @@ export function TransactionForm({
   };
 
   const validateForm = () => {
-    if (!formData.amount || Number(formData.amount) <= 0) {
+    const amount = Number(formData.amount);
+    if (!formData.amount || amount <= 0) {
       return "Amount must be greater than zero.";
+    }
+    if (amount > 250000) {
+      return "Amount cannot exceed $250,000.";
     }
     if (!formData.category) {
       return "Category is required.";
@@ -174,6 +178,7 @@ export function TransactionForm({
                 name="amount"
                 type="number"
                 min="0.01"
+                max="250000"
                 step="0.01"
                 value={formData.amount}
                 onChange={handleChange}
