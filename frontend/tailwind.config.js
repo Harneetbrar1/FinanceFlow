@@ -82,9 +82,9 @@ export default {
     }),
   ],
   safelist: [
-    // Ensure responsive classes aren't purged
+    // Ensure color classes with weights aren't purged (needed for dynamic classes)
     {
-      pattern: /^(bg|text|border|shadow)-(primary|success|warning|danger)/,
+      pattern: /^(bg|text|border|shadow)-(primary|success|warning|danger)-(50|100|200|300|400|500|600|700|800|900)$/,
     },
   ],
 }
