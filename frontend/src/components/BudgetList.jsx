@@ -10,7 +10,7 @@ import { formatCurrency } from "../utils/formatters";
  * Displays a list of budgets with their current spending and progress.
  * Features:
  * - Shows budget limit vs actual spending per category
- * - Color-coded progress bars (green/yellow/red)
+ * - Color-coded percentage text (green/yellow/red)
  * - Calculates spending from transactions array
  * - Responsive grid layout
  * - Empty state when no budgets exist
@@ -19,6 +19,7 @@ import { formatCurrency } from "../utils/formatters";
  * - Refactored to use useBudgetCalculations hook (DRY principle)
  * - Uses formatCurrency utility (DRY principle)
  * - Improved code reusability and maintainability
+ * - Simplified percentage display (removed progress bar)
  *
  * @component
  * @param {Object} props
@@ -26,10 +27,7 @@ import { formatCurrency } from "../utils/formatters";
  * @param {Array} props.transactions - Array of transaction objects (to calculate spending)
  */
 export function BudgetList({ budgets = [], transactions = [] }) {
-  const { getEnrichedBudgets, getProgressColor } = useBudgetCalculations(
-    budgets,
-    transactions,
-  );
+  const { getEnrichedBudgets } = useBudgetCalculations(budgets, transactions);
 
   // Empty state
   if (!budgets || budgets.length === 0) {
@@ -81,25 +79,30 @@ export function BudgetList({ budgets = [], transactions = [] }) {
 
             {/* Budget vs Spent */}
             <div className="mb-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600">Spent</span>
-                <span className="font-medium text-gray-900">
-                  {formatCurrency(budget.spent)} /{" "}
-                  {formatCurrency(budget.limit)}
-                </span>
-              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <div className="text-sm text-gray-600 mb-1">Spent</div>
+                  <div className="font-semibold text-gray-900">
+                    {formatCurrency(budget.spent)} /{" "}
+                    {formatCurrency(budget.limit)}
+                  </div>
+                </div>
 
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-full ${getProgressColor(budget.status)} transition-all duration-300`}
-                  style={{ width: `${Math.min(budget.percentage, 100)}%` }}
-                  role="progressbar"
-                  aria-valuenow={budget.percentage}
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                  aria-label={`Budget used: ${budget.percentage}%`}
-                />
+                {/* Percentage Display */}
+                <div className="text-right">
+                  <div className="text-sm text-gray-500 mb-1">Usage</div>
+                  <div
+                    className={`text-3xl font-bold ${
+                      budget.percentage > 100
+                        ? "text-red-600"
+                        : budget.percentage >= 75
+                          ? "text-amber-600"
+                          : "text-emerald-600"
+                    }`}
+                  >
+                    {budget.percentage}%
+                  </div>
+                </div>
               </div>
             </div>
 
