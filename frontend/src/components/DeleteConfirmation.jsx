@@ -35,7 +35,9 @@ export function DeleteConfirmation({
    */
   const handleConfirm = () => {
     if (!isDeleting) {
-      onConfirm(transaction._id);
+      // Handle both _id (MongoDB) and id (fallback) formats
+      const transactionId = transaction._id || transaction.id;
+      onConfirm(transactionId);
     }
   };
 
