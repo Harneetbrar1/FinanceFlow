@@ -90,14 +90,15 @@ export const useBudgetCalculations = (budgets = [], transactions = []) => {
    * Get color class for budget status
    * @param {string} status - Budget status ('good' | 'warning' | 'over')
    * @returns {string} Tailwind color classes
+   * 
+   * Tailwind safelist (ensures these classes are included in build):
+   * bg-success-600 bg-warning-600 bg-danger-600
    */
   const getProgressColor = (status) => {
-    const colors = {
-      good: 'bg-success-600',
-      warning: 'bg-warning-600',
-      over: 'bg-danger-600',
-    };
-    return colors[status] || colors.good;
+    // Return color class based on budget status
+    if (status === 'over') return 'bg-danger-600';
+    if (status === 'warning') return 'bg-warning-600';
+    return 'bg-success-600';
   };
 
   return {
