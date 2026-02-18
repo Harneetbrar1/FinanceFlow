@@ -93,7 +93,7 @@ export function BudgetList({ budgets = [], transactions = [] }) {
               <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div
                   className={`h-full ${getProgressColor(budget.status)} transition-all duration-300`}
-                  style={{ width: `${budget.percentage}%` }}
+                  style={{ width: `${Math.min(budget.percentage, 100)}%` }}
                   role="progressbar"
                   aria-valuenow={budget.percentage}
                   aria-valuemin="0"

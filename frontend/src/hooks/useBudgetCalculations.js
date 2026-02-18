@@ -59,18 +59,18 @@ export const useBudgetCalculations = (budgets = [], transactions = []) => {
    */
   const getBudgetStatus = (budget) => {
     const spent = calculateSpending(budget);
-    const percentage = Math.min((spent / budget.limit) * 100, 100);
+    const percentage = (spent / budget.limit) * 100; // Allow over 100% for proper color coding
     
-    let status = 'good'; // under 75%
-    if (percentage > 100) status = 'over';
-    else if (percentage > 75) status = 'warning';
+    let status = 'good'; // 0-75% (green)
+    if (percentage > 100) status = 'over'; // >100% (red)
+    else if (percentage >= 75) status = 'warning'; // 75-100% (yellow)
 
     return {
       spent,
       limit: budget.limit,
       percentage: Math.round(percentage),
       status,
-      remaining: Math.max(budget.limit - spent, 0),
+      remaining: budget.limit - spent, // Allow negative for over-budget
       isOverBudget: spent > budget.limit,
     };
   };
